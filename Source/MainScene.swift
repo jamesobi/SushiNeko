@@ -25,6 +25,7 @@ class MainScene: CCNode {
     var gameState: GameState = .Title
     
     
+    var windowAlreadyMade:Bool = false
     var piecesArray:[Piece]! = []
     var someValue:CGFloat = CGFloat(60)
     var pieceLastSide:Side = .Left
@@ -32,6 +33,7 @@ class MainScene: CCNode {
     var firstSushi:Bool = true
     var difficulty:Float = 1
     var addPiecePosition: CGPoint?
+    var savedGameOverScreen:GameOver?
     
     var timeLeft:Float = 10 {
         didSet {
@@ -87,36 +89,26 @@ class MainScene: CCNode {
     override func touchBegan(touch: CCTouch!, withEvent event: CCTouchEvent!) {
         var screenHalf = CCDirector.sharedDirector().viewSize().width / 2
         
-        
-        
         if gameState == .Playing || gameState == .Ready {
             if gameState == .Ready {
                 gameState = .Playing
                 tapButtons.runAction(CCActionFadeOut(duration: 0.2))
-                
-                
-                difficulty += Float(0.01)
-                if touch.locationInWorld().x > screenHalf {
-                    character.right()
-                } else {
-                    character.left()
-                }
-                isGameOver()
-                stepTower()
-                isGameOver()
-            } else {
-                
-                difficulty += Float(0.1)
-                if touch.locationInWorld().x > screenHalf {
-                    character.right()
-                } else {
-                    character.left()
-                }
-                isGameOver()
-                stepTower()
-                isGameOver()
             }
-            isGameOver()
+            
+            difficulty += Float(0.01)
+            if touch.locationInWorld().x > screenHalf {
+                character.right()
+            } else {
+                character.left()
+            }
+            
+            if(isGameOver()){
+                return
+            }
+            stepTower()
+            if(isGameOver()){
+                return
+            }
         }
     }
 
@@ -136,6 +128,9 @@ class MainScene: CCNode {
         
         addHitPiece(piecesArray[0].side)
         isGameOver()
+        if(isGameOver()){
+            return
+        }
         piecesArray[0].side = .None
 
         
@@ -153,11 +148,6 @@ class MainScene: CCNode {
     func resetTower() {
         firstSushi = true
         pieceLastSide = character.side
-        
-//        for piece:Piece in piecesArray {
-//            piecesArray.removeAtIndex(0)
-//            piecesNode.remove
-//        }
         
         piecesArray.removeAll()
         piecesNode.removeAllChildren()
@@ -178,6 +168,17 @@ class MainScene: CCNode {
     }
     
     func retry() {
+        println("retry function hit")
+        //savedGameOverScreen!.runAction(CCActionFadeOut(duration: 0.2))
+        
+        //savedGameOverScreen!.getMainNode().visible = false
+        
+        //savedGameOverScreen!.removeAllChildren()
+        
+        self.removeChildByName("GameOverNode")
+        println("node removed")
+        println("prepare for error")
+        
         scoreLabel.string = "0"
         resetTower()
         gameState = .Playing
@@ -196,6 +197,8 @@ class MainScene: CCNode {
         
         
         character.left()
+        windowAlreadyMade = false
+        
     }
     
     func addHitPiece(obstacleSide: Side) {
@@ -232,15 +235,28 @@ class MainScene: CCNode {
         userInteractionEnabled = true
     }
     
+    
+    
     func triggerGameOver() {
         gameState = .GameOver
         
-        mainMenuButton.visible = true
-        retryButton.visible = true
-        userInteractionEnabled = false
-        //character.stopAllActions()
-        println("Game Over")
+        //userInteractionEnabled = false
+        if !windowAlreadyMade {
+            var gameOverScreen = CCBReader.load("GameOver", owner: self) as! GameOver
+            gameOverScreen.score = scoreLabel.string.toInt()!
+            self.addChild(gameOverScreen, z: 10, name: "GameOverNode")
+            windowAlreadyMade = true
+            println("Game Over")
+        }
+        
+        //self.addChild(gameOverScreen)
+        
+        println("Game Over again...")
     }
+    
+    
+    
+    
     func ready() {
         gameState = .Ready
         
